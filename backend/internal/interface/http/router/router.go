@@ -17,7 +17,7 @@ type Options struct {
 func New(options Options) http.Handler {
     mux := http.NewServeMux()
 
-    authHandler := handler.NewAuthHandler(options.DB)
+    authHandler := handler.NewAuthHandler(options.DB, options.Config.Auth.JWTSecret)
     systemHandler := handler.NewSystemHandler(options.DB)
     healthHandler := handler.NewHealthHandler(options.DB)
 
