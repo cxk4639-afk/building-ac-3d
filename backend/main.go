@@ -10,6 +10,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
 type App struct {
@@ -39,6 +40,8 @@ type CreateVisualConfigRequest struct {
 }
 
 func main() {
+	loadEnvFile()
+
 	db, err := openDB()
 	if err != nil {
 		log.Fatalf("connect mysql failed: %v", err)
@@ -57,6 +60,14 @@ func main() {
 	port := env("APP_PORT", "8080")
 	log.Printf("building-ac-3d backend is running at http://localhost:%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
+}
+
+func loadEnvFile() {
+	if err := godotenv.Load(); err == nil {
+		return
+	}
+
+	_ = godotenv.Load("backend/.env")
 }
 
 func openDB() (*sql.DB, error) {
