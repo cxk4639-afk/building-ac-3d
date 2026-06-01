@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import { RouterView, useRoute, useRouter } from 'vue-router'
 import type { MenuOption } from 'naive-ui'
 
 import { useAuthStore } from '@/stores/modules/auth'
@@ -11,24 +11,44 @@ const authStore = useAuthStore()
 
 const menuOptions = computed<MenuOption[]>(() => [
   {
-    label: () => <RouterLink to="/dashboard">工作台</RouterLink>,
+    label: '工作台',
     key: '/dashboard',
   },
   {
     label: '系统管理',
     key: 'system',
     children: [
-      { label: () => <RouterLink to="/system/tenant">租户管理</RouterLink>, key: '/system/tenant' },
-      { label: () => <RouterLink to="/system/user">用户管理</RouterLink>, key: '/system/user' },
-      { label: () => <RouterLink to="/system/role">角色管理</RouterLink>, key: '/system/role' },
-      { label: () => <RouterLink to="/system/menu">菜单管理</RouterLink>, key: '/system/menu' },
+      {
+        label: '租户管理',
+        key: '/system/tenant',
+      },
+      {
+        label: '用户管理',
+        key: '/system/user',
+      },
+      {
+        label: '角色管理',
+        key: '/system/role',
+      },
+      {
+        label: '菜单管理',
+        key: '/system/menu',
+      },
     ],
   },
   {
-    label: () => <RouterLink to="/visual-config">3D配置</RouterLink>,
+    label: '3D配置',
     key: '/visual-config',
   },
 ])
+
+function handleMenuUpdate(key: string | number) {
+  const path = String(key)
+
+  if (path.startsWith('/')) {
+    router.push(path)
+  }
+}
 
 async function handleLogout() {
   await authStore.logout()
@@ -45,18 +65,30 @@ async function handleLogout() {
       :width="240"
     >
       <div class="logo">building-ac-3d</div>
-      <n-menu :value="route.path" :options="menuOptions" />
+
+      <n-menu
+        :value="route.path"
+        :options="menuOptions"
+        @update:value="handleMenuUpdate"
+      />
     </n-layout-sider>
 
     <n-layout>
       <n-layout-header class="header" bordered>
         <div>
           <strong>{{ route.meta.title || '工作台' }}</strong>
-          <span class="tenant">当前租户：{{ authStore.userInfo?.tenant.name || '-' }}</span>
+          <span class="tenant">
+            当前租户：{{ authStore.userInfo?.tenant.name || '-' }}
+          </span>
         </div>
+
         <n-space align="center">
-          <span>{{ authStore.userInfo?.nickname || authStore.userInfo?.username }}</span>
-          <n-button size="small" @click="handleLogout">退出登录</n-button>
+          <span>
+            {{ authStore.userInfo?.nickname || authStore.userInfo?.username }}
+          </span>
+          <n-button size="small" @click="handleLogout">
+            退出登录
+          </n-button>
         </n-space>
       </n-layout-header>
 
