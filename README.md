@@ -11,6 +11,15 @@ frontend/  Vue + Vite 前端页面
 
 ## 1. 创建 MySQL 数据库
 
+你的 MySQL 连接信息：
+
+```txt
+主机：localhost
+端口：3306
+用户名：root
+数据库：building_ac_3d
+```
+
 先在本机 MySQL 中创建数据库：
 
 ```sql
@@ -30,26 +39,21 @@ cd backend
 cp .env.example .env
 ```
 
-把 `.env` 中的 `MYSQL_PASSWORD` 改成你本机 MySQL 的密码。
+然后编辑 `backend/.env`：
 
-如果你不想使用 `.env`，也可以直接在终端中导出环境变量：
+```env
+APP_PORT=8080
 
-```bash
-export MYSQL_HOST=127.0.0.1
-export MYSQL_PORT=3306
-export MYSQL_DATABASE=building_ac_3d
-export MYSQL_USER=root
-export MYSQL_PASSWORD=你的密码
-export APP_PORT=8080
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_DATABASE=building_ac_3d
+MYSQL_USER=root
+MYSQL_PASSWORD=你的 MySQL 密码
+
+CORS_ALLOW_ORIGIN=http://localhost:5173
 ```
 
-注意：当前 Go 代码读取的是系统环境变量，不会自动读取 `.env` 文件。如果使用 `.env` 文件，可以先手动执行：
-
-```bash
-set -a
-source .env
-set +a
-```
+注意：`.env` 是本地私密配置，已经被 `.gitignore` 忽略，不要提交到 GitHub。
 
 ## 3. 启动后端
 
