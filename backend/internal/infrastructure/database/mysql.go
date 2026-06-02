@@ -1,16 +1,16 @@
 package database
 
 import (
-    "database/sql"
     "fmt"
-    "time"
 
     "building-ac-3d/backend/internal/config"
 
-    _ "github.com/go-sql-driver/mysql"
+    "gorm.io/driver/mysql"
+    "gorm.io/gorm"
+    "gorm.io/gorm/logger"
 )
 
-func Open(cfg config.DatabaseConfig) (*sql.DB, error) {
+func Open(cfg config.DatabaseConfig) (*gorm.DB, error) {
     dsn := fmt.Sprintf(
         "%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true&loc=Local",
         cfg.User,
@@ -20,17 +20,22 @@ func Open(cfg config.DatabaseConfig) (*sql.DB, error) {
         cfg.Name,
     )
 
-    db, err := sql.Open("mysql", dsn)
+    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+        Logger: logger.Default.LogMode(logger.Info),
+    })
     if err != nil {
         return nil, err
     }
 
-    db.SetMaxOpenConns(20)
-    db.SetMaxIdleConns(10)
-    db.SetConnMaxLifetime(time.Hour)
+    sqlDB, err := db.DB()
+    if err != nil {
+        return nil, err
+    }
 
-    if err := db.Ping(); err != nil {
-        _ = db.Close()
+    sqlDB.SetMaxOpenConns(20)
+    sqlDB.SetMaxIdleConns(10)
+
+    if err := sqlDB.Ping(); err != nil {
         return nil, err
     }
 
