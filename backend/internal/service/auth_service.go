@@ -43,8 +43,8 @@ func (s *AuthService) Login(req dto.LoginRequest) (*dto.LoginResponse, error) {
 	}
 
 	return &dto.LoginResponse{
-		Token:        buildDevToken(user.ID, tenant.ID),
-		RefreshToken: fmt.Sprintf("dev-refresh-%d-%d-%d", user.ID, tenant.ID, time.Now().Unix()),
+		Token:        buildDevToken(tenant.ID, user.ID),
+		RefreshToken: fmt.Sprintf("dev-refresh-token-%d-%d-%d", tenant.ID, user.ID, time.Now().Unix()),
 	}, nil
 }
 
@@ -84,6 +84,6 @@ func (s *AuthService) Me(userID uint) (*dto.UserInfo, error) {
 	}, nil
 }
 
-func buildDevToken(userID uint, tenantID uint) string {
-	return fmt.Sprintf("dev-token-%d-%d-%d", userID, tenantID, time.Now().Unix())
+func buildDevToken(tenantID uint, userID uint) string {
+	return fmt.Sprintf("dev-token-%d-%d", tenantID, userID)
 }

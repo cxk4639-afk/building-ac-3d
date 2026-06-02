@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"time"
+
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
@@ -24,5 +26,10 @@ func (h *HealthHandler) DBHealth(c *gin.Context) {
 		fail(c, 400, err.Error())
 		return
 	}
-	ok(c, map[string]string{"status": "ok"})
+	ok(c, gin.H{
+		"ok":        true,
+		"database":  "building_ac_3d",
+		"message":   "mysql connected",
+		"timestamp": time.Now().Format(time.RFC3339),
+	})
 }
