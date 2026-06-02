@@ -1,87 +1,80 @@
 package database
 
-import "database/sql"
+import (
+    "building-ac-3d/backend/internal/domain/model"
 
-func Migrate(db *sql.DB) error {
-    statements := []string{
-        `CREATE TABLE IF NOT EXISTS tenants (
-            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-            name VARCHAR(100) NOT NULL,
-            code VARCHAR(64) NOT NULL UNIQUE,
-            status TINYINT NOT NULL DEFAULT 1,
-            remark VARCHAR(255) NOT NULL DEFAULT '',
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-        `CREATE TABLE IF NOT EXISTS users (
-            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-            tenant_id BIGINT NOT NULL,
-            username VARCHAR(64) NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            nickname VARCHAR(64) NOT NULL DEFAULT '',
-            status TINYINT NOT NULL DEFAULT 1,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uk_tenant_username (tenant_id, username)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-        `CREATE TABLE IF NOT EXISTS roles (
-            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-            tenant_id BIGINT NOT NULL,
-            name VARCHAR(64) NOT NULL,
-            code VARCHAR(64) NOT NULL,
-            status TINYINT NOT NULL DEFAULT 1,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uk_tenant_role_code (tenant_id, code)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-        `CREATE TABLE IF NOT EXISTS menus (
-            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-            parent_id BIGINT NOT NULL DEFAULT 0,
-            title VARCHAR(64) NOT NULL,
-            path VARCHAR(255) NOT NULL DEFAULT '',
-            component VARCHAR(255) NOT NULL DEFAULT '',
-            permission VARCHAR(128) NOT NULL DEFAULT '',
-            type VARCHAR(16) NOT NULL,
-            sort INT NOT NULL DEFAULT 0,
-            visible TINYINT NOT NULL DEFAULT 1
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-        `CREATE TABLE IF NOT EXISTS user_roles (
-            user_id BIGINT NOT NULL,
-            role_id BIGINT NOT NULL,
-            PRIMARY KEY (user_id, role_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-        `CREATE TABLE IF NOT EXISTS role_menus (
-            role_id BIGINT NOT NULL,
-            menu_id BIGINT NOT NULL,
-            PRIMARY KEY (role_id, menu_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-        `CREATE TABLE IF NOT EXISTS visual_configs (
-            id BIGINT PRIMARY KEY AUTO_INCREMENT,
-            tenant_id BIGINT NOT NULL DEFAULT 1,
-            name VARCHAR(100) NOT NULL,
-            description VARCHAR(255) NOT NULL DEFAULT '',
-            config_data JSON NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-        `INSERT IGNORE INTO tenants (id, name, code, status, remark) VALUES (1, '默认租户', 'default', 1, '系统初始化租户');`,
-        `INSERT IGNORE INTO users (id, tenant_id, username, password, nickname, status) VALUES (1, 1, 'admin', '123456', '系统管理员', 1);`,
-        `INSERT IGNORE INTO roles (id, tenant_id, name, code, status) VALUES (1, 1, '超级管理员', 'super_admin', 1);`,
-        `INSERT IGNORE INTO menus (id, parent_id, title, path, component, permission, type, sort, visible) VALUES
-            (1, 0, '系统管理', '/system', 'Layout', '', 'catalog', 1, 1),
-            (2, 1, '租户管理', '/system/tenant', 'system/tenant/index', 'system:tenant:list', 'menu', 1, 1),
-            (3, 1, '用户管理', '/system/user', 'system/user/index', 'system:user:list', 'menu', 2, 1),
-            (4, 1, '角色管理', '/system/role', 'system/role/index', 'system:role:list', 'menu', 3, 1),
-            (5, 1, '菜单管理', '/system/menu', 'system/menu/index', 'system:menu:list', 'menu', 4, 1),
-            (6, 0, '3D配置', '/visual-config', 'visual-config/index', 'visual:config:list', 'menu', 2, 1);`,
-        `INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (1, 1);`,
-        `INSERT IGNORE INTO role_menus (role_id, menu_id) VALUES (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6);`,
+    "gorm.io/gorm"
+)
+
+func Migrate(db *gorm.DB) error {
+    if err := db.AutoMigrate(
+        &model.Tenant{},
+        &model.User{},
+        &model.Role{},
+        &model.Menu{},
+        &model.VisualConfig{},
+    ); err != nil {
+        return err
     }
 
-    for _, statement := range statements {
-        if _, err := db.Exec(statement); err != nil {
+    return seedDefaultData(db)
+}
+
+func seedDefaultData(db *gorm.DB) error {
+    defaultTenant := model.Tenant{
+        ID:     1,
+        Name:   "默认租户",
+        Code:   "default",
+        Status: 1,
+        Remark: "系统初始化租户",
+    }
+    if err := db.FirstOrCreate(&defaultTenant, model.Tenant{ID: 1}).Error; err != nil {
+        return err
+    }
+
+    admin := model.User{
+        ID:       1,
+        TenantID: 1,
+        Username: "admin",
+        Password: "123456",
+        Nickname: "系统管理员",
+        Status:   1,
+    }
+    if err := db.FirstOrCreate(&admin, model.User{ID: 1}).Error; err != nil {
+        return err
+    }
+
+    superAdmin := model.Role{
+        ID:       1,
+        TenantID: 1,
+        Name:     "超级管理员",
+        Code:     "super_admin",
+        Status:   1,
+    }
+    if err := db.FirstOrCreate(&superAdmin, model.Role{ID: 1}).Error; err != nil {
+        return err
+    }
+
+    menus := []model.Menu{
+        {ID: 1, ParentID: 0, Title: "系统管理", Path: "/system", Component: "Layout", Permission: "", Type: "catalog", Sort: 1, Visible: true},
+        {ID: 2, ParentID: 1, Title: "租户管理", Path: "/system/tenant", Component: "system/tenant/index", Permission: "system:tenant:list", Type: "menu", Sort: 1, Visible: true},
+        {ID: 3, ParentID: 1, Title: "用户管理", Path: "/system/user", Component: "system/user/index", Permission: "system:user:list", Type: "menu", Sort: 2, Visible: true},
+        {ID: 4, ParentID: 1, Title: "角色管理", Path: "/system/role", Component: "system/role/index", Permission: "system:role:list", Type: "menu", Sort: 3, Visible: true},
+        {ID: 5, ParentID: 1, Title: "菜单管理", Path: "/system/menu", Component: "system/menu/index", Permission: "system:menu:list", Type: "menu", Sort: 4, Visible: true},
+        {ID: 6, ParentID: 0, Title: "3D配置", Path: "/visual-config", Component: "visual-config/index", Permission: "visual:config:list", Type: "menu", Sort: 2, Visible: true},
+    }
+
+    for _, menu := range menus {
+        if err := db.FirstOrCreate(&menu, model.Menu{ID: menu.ID}).Error; err != nil {
             return err
         }
+    }
+
+    if err := db.Model(&admin).Association("Roles").Replace(&superAdmin); err != nil {
+        return err
+    }
+    if err := db.Model(&superAdmin).Association("Menus").Replace(&menus); err != nil {
+        return err
     }
 
     return nil
