@@ -1,9 +1,7 @@
 package app
 
 import (
-    "fmt"
     "log"
-    "net/http"
 
     "building-ac-3d/backend/internal/config"
     "building-ac-3d/backend/internal/infrastructure/database"
@@ -12,7 +10,7 @@ import (
 
 type Application struct {
     cfg    *config.Config
-    server *http.Server
+    engine *router.Engine
 }
 
 func New() (*Application, error) {
@@ -27,25 +25,18 @@ func New() (*Application, error) {
         return nil, err
     }
 
-    handler := router.New(router.Options{
+    engine := router.New(router.Options{
         Config: cfg,
         DB:     db,
     })
 
     return &Application{
-        cfg: cfg,
-        server: &http.Server{
-            Addr:    ":" + cfg.App.Port,
-            Handler: handler,
-        },
+        cfg:    cfg,
+        engine: engine,
     }, nil
 }
 
 func (app *Application) Run() error {
     log.Printf("building-ac-3d backend is running at http://localhost:%s", app.cfg.App.Port)
-    return app.server.ListenAndServe()
-}
-
-func (app *Application) Addr() string {
-    return fmt.Sprintf(":%s", app.cfg.App.Port)
+    return app.engine.Run(":" + app.cfg.App.Port)
 }
